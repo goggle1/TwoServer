@@ -30,7 +30,7 @@
 #define EPOLL_SIZE 		1000000
 #define MAX_EVENTS		64
 // ms
-#define WAIT_PERIOD		200
+#define WAIT_PERIOD		10
 
 
 class Events

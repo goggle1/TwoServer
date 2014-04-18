@@ -65,5 +65,30 @@ int Events::DeleteWatch(int fd)
 	return ret;
 }
 
+int Events::ModifyWatch(int fd, u_int32_t events, void* handler)
+{
+	int ret = 0;
+
+	struct epoll_event epoll_event = {0};	
+	epoll_event.events |= EPOLLET;	
+	if(events&EVENT_READ)
+	{
+		epoll_event.events |= EPOLLIN;
+	}
+	if(events&EVENT_WRITE)
+	{
+		epoll_event.events |= EPOLLOUT;
+	}
+
+	epoll_event.data.ptr = handler;
+	
+	ret = epoll_ctl(m_epoll_fd, EPOLL_CTL_MOD, fd, &epoll_event);
+	if(ret < 0)
+	{
+		fprintf(stderr, "%s: epoll_ctl modify %d return %d, errno=%d, %s\n", __PRETTY_FUNCTION__, fd, ret, errno, strerror(errno));
+	}
+	
+	return ret;
+}
 
 

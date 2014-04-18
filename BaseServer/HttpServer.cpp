@@ -29,7 +29,7 @@ int HttpServer::DoRead(TaskThread* threadp)
 		if (a_fd == -1)
 		{
 			int acceptError = errno;
-			fprintf(stderr, "%s[%p][%p]: errno=%d, %s\n", __PRETTY_FUNCTION__, this, threadp, acceptError, strerror(acceptError));
+			//fprintf(stderr, "%s[%p][%p]: errno=%d, %s\n", __PRETTY_FUNCTION__, this, threadp, acceptError, strerror(acceptError));
 			if (acceptError == EAGAIN)
 			{	
 				return 0;

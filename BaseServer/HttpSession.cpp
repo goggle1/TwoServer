@@ -11,6 +11,7 @@
 #include "common.h"
 #include "events.h"
 #include "StringParser.h"
+#include "TaskThread.h"
 #include "HttpSession.h"
 
 #define BASE_SERVER_NAME		"OneServer"
@@ -1037,10 +1038,12 @@ int HttpSession::DoEvents(u_int32_t events, TaskThread* threadp)
 	if(events & EPOLLERR)
 	{
 		delete this;
+		return 0;
 	}
 	if(events & EPOLLHUP)
 	{
 		delete this;
+		return 0;
 	}
 	if(events & EVENT_READ)
 	{
@@ -1048,6 +1051,32 @@ int HttpSession::DoEvents(u_int32_t events, TaskThread* threadp)
 		if(ret < 0)
 		{
 			delete this;
+			return 0;
+		}
+		else if(ret == 0)
+		{
+			// do nothing.
+		}
+		else
+		{
+			m_task_thread->m_EventsMaster.ModifyWatch(m_SockFd, EVENT_READ|EVENT_WRITE, this);
+		}
+	}
+	if(events * EVENT_WRITE)
+	{
+		ret = DoContinue();
+		if(ret < 0)
+		{
+			delete this;
+			return 0;
+		}
+		else if(ret == 0)
+		{
+			m_task_thread->m_EventsMaster.ModifyWatch(m_SockFd, EVENT_READ, this);
+		}
+		else
+		{
+			// do nothing.
 		}
 	}
 	
