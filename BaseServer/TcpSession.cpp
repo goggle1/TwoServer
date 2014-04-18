@@ -52,6 +52,11 @@ int TcpSession::Init(TaskThread* threadp)
     err = ::setsockopt(m_SockFd, SOL_SOCKET, SO_SNDBUF, (char*)&sndBufSize, sizeof(int));
     //AssertV(err == 0, OSThread::GetErrno());
 
+    struct linger              linger;
+    linger.l_onoff = 1;
+    linger.l_linger = 0;
+    err = ::setsockopt(m_SockFd, SOL_SOCKET, SO_LINGER, (const void *) &linger, sizeof(struct linger));
+    
 	// InitNonBlocking
    	int flag = ::fcntl(m_SockFd, F_GETFL, 0);
     err = ::fcntl(m_SockFd, F_SETFL, flag | O_NONBLOCK);

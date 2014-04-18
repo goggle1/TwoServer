@@ -27,10 +27,12 @@ int TaskThread::Init()
 	int ret = 0;
 	
 	m_EventsMaster.Init();
+	/*
 	m_EventsMaster.AddWatch(g_tcp_server->GetFd(),  EVENT_READ, g_tcp_server);
 	fprintf(stdout, "%s[%p]: AddWatch fd=%d\n", __PRETTY_FUNCTION__, this, g_tcp_server->GetFd());
 	m_EventsMaster.AddWatch(g_http_server->GetFd(), EVENT_READ, g_http_server);
 	fprintf(stdout, "%s[%p]: AddWatch fd=%d\n", __PRETTY_FUNCTION__, this, g_http_server->GetFd());
+	*/
 	return 0;
 }
 
@@ -103,11 +105,13 @@ Task* TaskThread::WaitForTask()
 
 int TaskThread::Entry()
 {
-	prctl(PR_SET_NAME, "oneserver_work");
+	prctl(PR_SET_NAME, "twoserver_work");
 	
 	struct epoll_event events[MAX_EVENTS];    
     while(1) 
-    {
+    {    	
+    	g_http_server->DoRead(this);
+    	
         int num = epoll_wait(m_EventsMaster.m_epoll_fd, events, MAX_EVENTS, WAIT_PERIOD);
         //fprintf(stdout, "%s[%p]: epoll_wait num=%d\n", __PRETTY_FUNCTION__, this, num);
 		for(int index = 0; index < num; ++index) 

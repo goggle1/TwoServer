@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <netinet/tcp.h>
+
 
 #include "events.h"
 #include "TcpServer.h"
@@ -115,6 +117,13 @@ int TcpServer::Init(u_int32_t ip, u_int16_t port)
     if(m_SockFd < 0)
 	{
 		return -3;
+	}
+
+	int timeout = 1; 
+	ret = ::setsockopt( m_SockFd, IPPROTO_TCP, TCP_DEFER_ACCEPT, &timeout, sizeof(int));
+	if(m_SockFd < 0)
+	{
+		return -4;
 	}
 
 	struct sockaddr_in  fLocalAddr;

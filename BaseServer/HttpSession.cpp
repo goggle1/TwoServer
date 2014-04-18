@@ -374,7 +374,7 @@ HttpSession::~HttpSession()
 	}
 #else
 	if(fFd != -1)
-	{
+	{		
 		close(fFd);
 		fFd = -1;
 	}
