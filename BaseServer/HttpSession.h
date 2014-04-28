@@ -7,9 +7,7 @@
 #include "FilesMaster.h"
 
 #define USE_FILE_BUFFER 1
-
-//ms
-#define SEND_INTERVAL	10
+#define kReadBufferSize (1024*256)
 
 class HttpSession : public TcpSession
 {
@@ -24,29 +22,14 @@ public:
 	virtual	int 	DoEvents(u_int32_t events, TaskThread* threadp);
 	
 protected:
-	int			DoGet();
-	int 		ResponseFile(char* abs_path);
-	int 		ResponseError(HTTPStatusCode status_code);
-	int		    RecvData();
-	int		    SendData();
-	bool		SendDone();
-	void        MoveOnRequest();
+	int				DoGet();
+	int 			ResponseFile(char* abs_path);
+	int 			ResponseError(HTTPStatusCode status_code);
+	bool			SendDone();
+	void        	MoveOnRequest();
 	
-	HttpRequest 	m_Request;
-	HTTPStatusCode 	fHttpStatus;
-
-	//CONSTANTS:
-	enum
-	{
-		kResponseBufferSizeInBytes = 1024*256,		 //UInt32	
-		kReadBufferSize = 1024*16,
-	};
-	char		fResponseBuffer[kResponseBufferSizeInBytes];
-	//one full http response.
-	StrPtrLen	fStrResponse; 
-	//http response left, which will be sended again.
-	StrPtrLen	fStrRemained;
-	// 
+	HttpRequest 		m_Request;
+	HTTPStatusCode 		fHttpStatus;
 	StringFormatter 	fResponse;
 	u_int64_t			fContentLen;
 	// file
@@ -56,11 +39,10 @@ protected:
 	int					fFd;
 #endif
 	u_int64_t			m_ReadCount;
-	char		fBuffer[kReadBufferSize];
-	bool		fHaveRange;
-	int64_t		fRangeStart;
-	int64_t		fRangeStop;
-	
+	char				fBuffer[kReadBufferSize];
+	bool				fHaveRange;
+	int64_t				fRangeStart;
+	int64_t				fRangeStop;
 
 };
 

@@ -344,9 +344,7 @@ char* content_type_by_suffix(char* suffix)
 }
 
 HttpSession::HttpSession(int fd, struct sockaddr_in * addr) : 
-	TcpSession(fd, addr), 
-    fStrResponse((char*)fResponseBuffer, 0),
-    fStrRemained(fStrResponse),
+	TcpSession(fd, addr),     
     fResponse(NULL, 0)    
 {	
 	fprintf(stdout, "%s[%p]: fd=%d, 0x%08X:%u\n", __PRETTY_FUNCTION__, this, 
@@ -397,98 +395,6 @@ bool HttpSession::IsFullRequest()
     }
     
     return false;
-}
-
-int HttpSession::RecvData()
-{
-	int ret = 0;
-	
-	while(1)
-	{
-		char* 	recv_bufferp	= m_RequestBuffer + m_StrReceived.Len;
-		ssize_t recv_buff_size	= REQUEST_BUFF_SIZE - m_StrReceived.Len;
-		if(recv_buff_size <= 0)
-		{
-			fprintf(stderr, "%s[%p]: recv buffer full, recv_buff_size=%ld\n", __PRETTY_FUNCTION__, this, recv_buff_size);
-			return -1;
-		}
-		
-		ssize_t recv_ret = recv(m_SockFd, recv_bufferp, recv_buff_size, 0);
-		if(recv_ret == 0)
-		{
-			fprintf(stdout, "%s[%p]: recv=%ld, from fd=%d\n", __PRETTY_FUNCTION__, this, recv_ret, m_SockFd);
-			return -1;
-		}
-		else if(recv_ret < 0)
-		{
-			int err = errno;
-			fprintf(stderr, "%s[%p]: errno=%d, %s\n", __PRETTY_FUNCTION__, this, err, strerror(err));
-			if(err == EAGAIN) // or other errno
-			{
-				return 0;
-			}
-			else
-			{
-				fprintf(stderr, "%s[%p]: recv=%ld, from fd=%d\n", __PRETTY_FUNCTION__, this, recv_ret, m_SockFd);
-				return -1;
-			}
-		}
-		fprintf(stdout, "%s[%p]: size=%ld, recv=%ld,\n", __PRETTY_FUNCTION__, this, recv_buff_size, recv_ret, recv_bufferp);
-		my_printf(stdout, recv_bufferp, recv_ret);
-		m_StrReceived.Len += recv_ret;		
-	}
-
-	return 0;
-	
-}
-
-
-int HttpSession::SendData()
-{  	
-	int ret = 0;
-	if(fStrRemained.Len <= 0)
-    {
-    	return 0;
-    }  	
-
-	int should_send_len = fStrRemained.Len;
-	ret = send(m_SockFd, fStrRemained.Ptr, should_send_len, 0);
-    if(ret > 0)
-    {        
-    	fprintf(stdout, "%s[%p]: send %d return %d\n", 
-            __PRETTY_FUNCTION__, this, should_send_len, ret);
-        fStrRemained.Ptr += ret;
-        fStrRemained.Len -= ret;
-        ::memmove(fResponseBuffer, fStrRemained.Ptr, fStrRemained.Len);
-        fStrRemained.Ptr = fResponseBuffer; 
-
-        if(fStrRemained.Len <= 0)
-	    {
-	    	return 0;
-	    }  	
-	    else
-	    {
-	    	return SEND_INTERVAL;
-	    }
-    }
-    else
-    {
-    	int err = errno;
-        fprintf(stderr, "%s[%p]: send %d return %d, errno=%d, %s\n", 
-            __PRETTY_FUNCTION__, this, should_send_len, ret, err, strerror(err));
-        if(err == EAGAIN)
-        {
-        	return SEND_INTERVAL;
-        }
-        else // EPIPE, ECONNRESET
-        {
-        	close(m_SockFd);
-        	m_SockFd = -1;
-        	return -1;
-        }
-    }
-
-    return 0;
 }
 
 void HttpSession::MoveOnRequest()
@@ -564,7 +470,7 @@ int HttpSession::ResponseError(HTTPStatusCode status_code)
 
     fContentLen = content.GetBytesWritten();
     
-    fResponse.Set(fStrRemained.Ptr+fStrRemained.Len, kResponseBufferSizeInBytes-fStrRemained.Len);
+    fResponse.Set(fStrRemained.Ptr+fStrRemained.Len, RESPONSE_BUFF_SIZE-fStrRemained.Len);
     fResponse.PutFmtStr("%s %s %s\r\n", 
     	HttpProtocol::GetVersionString(http11Version)->Ptr,
     	HttpProtocol::GetStatusCodeAsString(status_code)->Ptr,
@@ -659,7 +565,7 @@ int HttpSession::ResponseFile(char* abs_path)
 	char* content_type = content_type_by_suffix(suffix);
 	fContentLen = fRangeStop+1-fRangeStart;
 	
-	fResponse.Set(fStrRemained.Ptr+fStrRemained.Len, kResponseBufferSizeInBytes-fStrRemained.Len);		
+	fResponse.Set(fStrRemained.Ptr+fStrRemained.Len, RESPONSE_BUFF_SIZE-fStrRemained.Len);		
 	fResponse.PutFmtStr("%s %s %s\r\n", 
 			HttpProtocol::GetVersionString(http11Version)->Ptr,
 			HttpProtocol::GetStatusCodeAsString(fHttpStatus)->Ptr,			
@@ -742,7 +648,7 @@ int HttpSession::ResponseFile(char* abs_path)
 	char* content_type = content_type_by_suffix(suffix);
 	fContentLen = fRangeStop+1-fRangeStart;
 	
-	fResponse.Set(fStrRemained.Ptr+fStrRemained.Len, kResponseBufferSizeInBytes-fStrRemained.Len);		
+	fResponse.Set(fStrRemained.Ptr+fStrRemained.Len, RESPONSE_BUFF_SIZE-fStrRemained.Len);		
 	fResponse.PutFmtStr("%s %s %s\r\n", 
 			HttpProtocol::GetVersionString(http11Version)->Ptr,
 			HttpProtocol::GetStatusCodeAsString(fHttpStatus)->Ptr,			
@@ -875,7 +781,7 @@ int HttpSession::DoContinue()
 	{
 		StrPtrLen buffer_availiable;
 		buffer_availiable.Ptr = fStrRemained.Ptr + fStrRemained.Len;
-		buffer_availiable.Len = kResponseBufferSizeInBytes - fStrRemained.Len;
+		buffer_availiable.Len = RESPONSE_BUFF_SIZE - fStrRemained.Len;
 		if(buffer_availiable.Len <= 0)
 		{
 			return SEND_INTERVAL;
@@ -940,7 +846,7 @@ int HttpSession::DoContinue()
 	{
 		StrPtrLen buffer_availiable;
 		buffer_availiable.Ptr = fStrRemained.Ptr + fStrRemained.Len;
-		buffer_availiable.Len = kResponseBufferSizeInBytes - fStrRemained.Len;
+		buffer_availiable.Len = RESPONSE_BUFF_SIZE - fStrRemained.Len;
 		if(buffer_availiable.Len <= 0)
 		{
 			return 1;
