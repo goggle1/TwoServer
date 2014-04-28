@@ -12,9 +12,7 @@ class NfspServer : public TcpServer
 public:
 	NfspServer();
 	virtual ~NfspServer();
-	int				DoRead(TaskThread* threadp = NULL);
-	NfspPeer* 		GetPeer(int fd, struct sockaddr_in * addr, TaskThread* threadp);
-	
+	virtual TcpSession*   	GetSession(int fd, struct sockaddr_in* addr, TaskThread* threadp);	
 };
 
 extern NfspServer*			g_nfsp_server;

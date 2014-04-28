@@ -9,7 +9,6 @@
 #include <sys/epoll.h>
 
 #include "common.h"
-#include "events.h"
 #include "StringParser.h"
 #include "TaskThread.h"
 #include "HttpSession.h"
@@ -994,43 +993,6 @@ int HttpSession::DoContinue()
 }
 #endif
 
-int HttpSession::Run()
-{	
-	int ret = 0;
-	
-	while(1)
-	{		
-		u_int64_t events = 0;
-		ret = DequeEvents(events);
-		if(ret < 1)
-		{
-			return 0;
-		}
-		
-		fprintf(stdout, "%s[%p]: events=0x%lx\n", __PRETTY_FUNCTION__, this, events);
-		if(events & EVENT_READ)
-		{
-			ret = DoRead();			
-		}
-		else if(events & EVENT_CONTINUE)
-		{
-			ret = DoContinue();	
-			fprintf(stdout, "%s[%p]: DoContinue() ret=%d\n", __PRETTY_FUNCTION__, this, ret);		
-		}
-		else if(events & EVENT_TIMEOUT)
-		{
-			//ret = DoTimeout();			
-		}
-		
-		if(ret != 0)
-		{
-			return ret;
-		}
-	}
-	
-	return ret;
-}
-
 int HttpSession::DoEvents(u_int32_t events, TaskThread* threadp)
 {
 	int ret = 0;
@@ -1062,7 +1024,7 @@ int HttpSession::DoEvents(u_int32_t events, TaskThread* threadp)
 			m_task_thread->m_EventsMaster.ModifyWatch(m_SockFd, EVENT_READ|EVENT_WRITE, this);
 		}
 	}
-	if(events * EVENT_WRITE)
+	if(events & EVENT_WRITE)
 	{
 		ret = DoContinue();
 		if(ret < 0)

@@ -5,11 +5,13 @@
 #include "BaseServer/FilesMaster.h"
 #include "BaseServer/TcpServer.h"
 #include "BaseServer/HttpServer.h"
+#include "BaseServer/NfspServer.h"
 #include "BaseServer/TaskThreadPool.h"
 
 FilesMaster*		g_files_master		= NULL;
 TcpServer*			g_tcp_server 		= NULL;
 HttpServer*			g_http_server 		= NULL;
+NfspServer*			g_nfsp_server		= NULL;
 TaskThreadPool* 	g_task_thread_pool 	= NULL;
 
 int start_files_master()
@@ -42,6 +44,15 @@ int start_server()
 	u_int16_t port2 = 9696;
 	g_http_server = new HttpServer();
 	ret = g_http_server->Init(ip2, port2);
+	if(ret < 0)
+	{
+		fprintf(stderr, "%s: server init error, return %d\n", __FUNCTION__, ret);
+	}
+
+	u_int32_t ip3 = 0;
+	u_int16_t port3 = 9797;
+	g_nfsp_server = new NfspServer();
+	ret = g_nfsp_server->Init(ip3, port3);
 	if(ret < 0)
 	{
 		fprintf(stderr, "%s: server init error, return %d\n", __FUNCTION__, ret);

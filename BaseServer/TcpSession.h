@@ -15,10 +15,7 @@ public:
 	TcpSession(int fd, struct sockaddr_in* addr);
 	virtual ~TcpSession();
 	int 			Init(TaskThread* threadp = NULL);
-	int				DoRead();
-	int 			DoTimeout();
-	virtual int 	Run();
-	virtual	void	Release();
+	int				DoRead();	
 	virtual int		DoEvents(u_int32_t events, TaskThread* threadp);
 	
 protected:

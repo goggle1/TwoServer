@@ -8,7 +8,6 @@
 #include <errno.h>
 
 #include "common.h"
-#include "events.h"
 #include "TaskThread.h"
 #include "TcpSession.h"
 
@@ -36,51 +35,58 @@ TcpSession::~TcpSession()
 
 int TcpSession::Init(TaskThread* threadp)
 {
+	int ret = 0;
+	
 	m_task_thread = threadp;
 	fprintf(stdout, "%s[%p]: task_thread=%p\n", __FUNCTION__, this, m_task_thread);
 	
 	//set options on the socket
     //we are a server, always disable nagle algorithm
     int one = 1;
-    int err = ::setsockopt(m_SockFd, IPPROTO_TCP, TCP_NODELAY, (char*)&one, sizeof(int));
-    //AssertV(err == 0, OSThread::GetErrno());
+    ret = ::setsockopt(m_SockFd, IPPROTO_TCP, TCP_NODELAY, (char*)&one, sizeof(int));
+    if(ret < 0)
+    {
+    	return -1;
+    }
     
-    err = ::setsockopt(m_SockFd, SOL_SOCKET, SO_KEEPALIVE, (char*)&one, sizeof(int));
-    //AssertV(err == 0, OSThread::GetErrno());
+    ret = ::setsockopt(m_SockFd, SOL_SOCKET, SO_KEEPALIVE, (char*)&one, sizeof(int));
+    if(ret < 0)
+    {
+    	return -2;
+    }
 
     int sndBufSize = 96L * 1024L;
-    err = ::setsockopt(m_SockFd, SOL_SOCKET, SO_SNDBUF, (char*)&sndBufSize, sizeof(int));
-    //AssertV(err == 0, OSThread::GetErrno());
+    ret = ::setsockopt(m_SockFd, SOL_SOCKET, SO_SNDBUF, (char*)&sndBufSize, sizeof(int));
+    if(ret < 0)
+    {
+    	return -3;
+    }
 
     struct linger              linger;
     linger.l_onoff = 1;
     linger.l_linger = 0;
-    err = ::setsockopt(m_SockFd, SOL_SOCKET, SO_LINGER, (const void *) &linger, sizeof(struct linger));
+    ret = ::setsockopt(m_SockFd, SOL_SOCKET, SO_LINGER, (const void *) &linger, sizeof(struct linger));
+    if(ret < 0)
+    {
+    	return -4;
+    }
     
 	// InitNonBlocking
    	int flag = ::fcntl(m_SockFd, F_GETFL, 0);
-    err = ::fcntl(m_SockFd, F_SETFL, flag | O_NONBLOCK);
+    ret = ::fcntl(m_SockFd, F_SETFL, flag | O_NONBLOCK);
+    if(ret < 0)
+    {
+    	return -5;
+    }
         
-	int ret = m_task_thread->m_EventsMaster.AddWatch(m_SockFd, EVENT_READ, this);
+	ret = m_task_thread->m_EventsMaster.AddWatch(m_SockFd, EVENT_READ, this);
 	if(ret < 0)
 	{
 		fprintf(stderr, "%s[%p]: g_events_master->AddWatch [%d], return %d\n", __FUNCTION__, this, m_SockFd, ret);
-		return -1;
+		return -6;
 	}
 	
 	return 0;
-}
-
-void TcpSession::Release()
-{
-	fprintf(stdout, "%s[%p]: \n", __PRETTY_FUNCTION__, this);
-	int ret = 0;
-	ret = m_task_thread->m_EventsMaster.DeleteWatch(m_SockFd);
-	if(ret < 0)
-	{
-		fprintf(stderr, "%s[%p]: g_events_master->DeleteWatch [%d], return %d\n", __FUNCTION__, this, m_SockFd, ret);
-	}
-	
 }
 
 int TcpSession::DoRead()
@@ -139,53 +145,6 @@ int TcpSession::DoRead()
 	}
 	
 	return 0;
-}
-
-
-int TcpSession::DoTimeout()
-{
-	int ret = 0;
-
-	fprintf(stdout, "%s[%p]: \n", __PRETTY_FUNCTION__, this);
-	
-	return -1;
-}
-
-
-int TcpSession::Run()
-{	
-	int ret = 0;
-	
-	while(1)
-	{		
-		u_int64_t events = 0;
-		ret = DequeEvents(events);
-		if(ret < 1)
-		{
-			return 0;
-		}
-		
-		fprintf(stdout, "%s: events=0x%lx\n", __PRETTY_FUNCTION__, events);
-		if(events & EVENT_READ)
-		{
-			ret = DoRead();			
-		}
-		else if(events & EVENT_CONTINUE)
-		{
-			//ret = DoContinue();			
-		}
-		else if(events & EVENT_TIMEOUT)
-		{
-			ret = DoTimeout();			
-		}
-		
-		if(ret < 0)
-		{
-			return ret;
-		}
-	}
-	
-	return ret;
 }
 
 

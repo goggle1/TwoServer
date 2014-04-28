@@ -2,6 +2,7 @@
 #define __EVENTS_H__
 
 #include <sys/types.h>
+#include <sys/epoll.h>
 
 /*
 #define EPOLLIN        0x001

@@ -9,10 +9,7 @@ class HttpServer : public TcpServer
 public:
 	HttpServer();
 	virtual ~HttpServer();
-	int				DoRead(TaskThread* threadp = NULL);
-	virtual int 	Run();
-	HttpSession*   	GetSession(int fd, struct sockaddr_in* addr, TaskThread* threadp);
-	virtual int		DoEvents(u_int32_t events, TaskThread* threadp);
+	virtual TcpSession*   	GetSession(int fd, struct sockaddr_in* addr, TaskThread* threadp);
 
 protected:
 	

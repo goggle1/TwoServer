@@ -17,7 +17,6 @@ public:
 	HttpSession(int fd, struct sockaddr_in* addr);
 	virtual ~HttpSession();
 
-	virtual int 	Run();
 	virtual int 	DoRead();
 	virtual	int		DoContinue();
 	virtual bool 	IsFullRequest();

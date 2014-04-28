@@ -2,7 +2,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
-#include <sys/epoll.h>
 
 #include "events.h"
 
