@@ -737,34 +737,40 @@ int HttpSession::DoRead()
 	{
 		return ret;
 	}
-	
-	if(IsFullRequest())
+
+	while(1)
 	{
-		ret = DoRequest();
-		if(ret < 0)
+		if(IsFullRequest())
 		{
-			return ret;
-		}
+			ret = DoRequest();
+			if(ret < 0)
+			{
+				return ret;
+			}
 
-		ret = SendData();
-		if(ret != 0)
-		{
-			return ret;
-		}
-
-		while(!SendDone())
-		{
-			ret = DoContinue();
+			ret = SendData();
 			if(ret != 0)
 			{
 				return ret;
 			}
-		}
-		
-	}	
 
-	return 0;
-	
+			while(!SendDone())
+			{
+				ret = DoContinue();
+				if(ret != 0)
+				{
+					return ret;
+				}
+			}
+			
+		}	
+		else
+		{
+			break;
+		}
+	}
+
+	return ret;
 }
 
 #if USE_FILE_BUFFER
