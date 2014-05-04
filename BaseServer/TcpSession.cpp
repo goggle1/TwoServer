@@ -12,8 +12,8 @@
 #include "TcpSession.h"
 
 TcpSession::TcpSession(int fd, struct sockaddr_in * addr) :
-	fStrResponse((char*)fResponseBuffer, 0),
-    fStrRemained(fStrResponse)
+	m_StrResponse((char*)m_ResponseBuffer, 0),
+    m_StrRemained(m_StrResponse)
 {
 	m_SockFd = fd;	
 	memcpy(&m_SockAddr, addr, sizeof(struct sockaddr_in));
@@ -91,6 +91,8 @@ int TcpSession::Init(TaskThread* threadp)
 	return 0;
 }
 
+// -1, error
+// 0,  ok
 int TcpSession::RecvData()
 {
 	int ret = 0;
@@ -134,32 +136,35 @@ int TcpSession::RecvData()
 	
 }
 
+// -1, error
+// 0, ok
+// 1, to be continue.
 int TcpSession::SendData()
 {  	
 	int ret = 0;
-	if(fStrRemained.Len <= 0)
+	if(m_StrRemained.Len <= 0)
     {
     	return 0;
     }  	
 
-	int should_send_len = fStrRemained.Len;
-	ret = send(m_SockFd, fStrRemained.Ptr, should_send_len, 0);
+	int should_send_len = m_StrRemained.Len;
+	ret = send(m_SockFd, m_StrRemained.Ptr, should_send_len, 0);
     if(ret > 0)
     {        
     	fprintf(stdout, "%s[%p]: send %d return %d\n", 
             __PRETTY_FUNCTION__, this, should_send_len, ret);
-        fStrRemained.Ptr += ret;
-        fStrRemained.Len -= ret;
-        ::memmove(fResponseBuffer, fStrRemained.Ptr, fStrRemained.Len);
-        fStrRemained.Ptr = fResponseBuffer; 
+        m_StrRemained.Ptr += ret;
+        m_StrRemained.Len -= ret;
+        ::memmove(m_ResponseBuffer, m_StrRemained.Ptr, m_StrRemained.Len);
+        m_StrRemained.Ptr = m_ResponseBuffer; 
 
-        if(fStrRemained.Len <= 0)
+        if(m_StrRemained.Len <= 0)
 	    {
 	    	return 0;
 	    }  	
 	    else
 	    {
-	    	return SEND_INTERVAL;
+	    	return SEND_TO_BE_CONTINUE;
 	    }
     }
     else
@@ -169,7 +174,7 @@ int TcpSession::SendData()
             __PRETTY_FUNCTION__, this, should_send_len, ret, err, strerror(err));
         if(err == EAGAIN)
         {
-        	return SEND_INTERVAL;
+        	return SEND_TO_BE_CONTINUE;
         }
         else // EPIPE, ECONNRESET
         {
@@ -182,59 +187,75 @@ int TcpSession::SendData()
     return 0;
 }
 
-int TcpSession::DoRead()
-{
-	char r_buffer[1024];
-	size_t len = 1024;
 
-	char s_buffer[1024];
-	snprintf(s_buffer, 1024, "%s: I got it.\n", __PRETTY_FUNCTION__);
-	size_t s_len = strlen(s_buffer);
+bool TcpSession::IsFullRequest()
+{
+	if(m_StrReceived.Len <= 0)
+	{
+		return false;
+	}
+
+	m_StrRequest.Ptr = m_StrReceived.Ptr;
+	m_StrRequest.Len = m_StrReceived.Len;	
+	return true;
+}
+
+
+int TcpSession::ResponseRequest()
+{
+	int ret = 0;
+
+	memcpy(m_ResponseBuffer, m_StrRequest.Ptr, m_StrRequest.Len);
+	m_StrResponse.Ptr = m_ResponseBuffer;
+	m_StrResponse.Len = m_StrRequest.Len;
+	m_StrRemained.Ptr = m_StrResponse.Ptr;
+	m_StrRemained.Len = m_StrResponse.Len;
 	
+	return ret;
+}
+
+
+void TcpSession::MoveOnRequest()
+{
+    StrPtrLen   strRemained;
+    strRemained.Set(m_StrRequest.Ptr+m_StrRequest.Len, m_StrReceived.Len-m_StrRequest.Len);
+        
+    ::memmove(m_RequestBuffer, strRemained.Ptr, strRemained.Len);
+    m_StrReceived.Set(m_RequestBuffer, strRemained.Len);
+    m_StrRequest.Set(m_RequestBuffer, 0);
+}
+
+int TcpSession::DoRead()
+{	
+	int ret = 0;
+	ret = RecvData();
+	if(ret < 0)
+	{
+		return ret;
+	}
+		
 	while(1)
 	{
-		ssize_t r_ret = recv(m_SockFd, r_buffer, len, 0);
-		if(r_ret == 0)
+		if(IsFullRequest())
 		{
-			fprintf(stdout, "%s: recv %ld, from fd=%d\n", __PRETTY_FUNCTION__, r_ret, m_SockFd);
-			return -1;
-		}
-		else if(r_ret < 0)
-		{
-			int err = errno;
-			fprintf(stderr, "%s: errno=%d, %s\n", __PRETTY_FUNCTION__, err, strerror(err));
-			if(err == EAGAIN) // or other errno
+			ret = ResponseRequest();
+			if(ret < 0)
 			{
-				return 0;
+				return ret;	
 			}
-			else
-			{
-				fprintf(stdout, "%s: recv %ld, close fd=%d\n", __PRETTY_FUNCTION__, r_ret, m_SockFd);
-				return -1;
-			}
-		}
-		r_buffer[r_ret] = '\0';
-		fprintf(stdout, "%s: recv %ld,\n%s\n", __PRETTY_FUNCTION__, r_ret, r_buffer);
-		
-		ssize_t s_ret = send(m_SockFd, s_buffer, s_len, 0);	
-		if(s_ret == -1)
-		{
-			int err = errno;
-			fprintf(stderr, "%s: errno=%d, %s\n", __PRETTY_FUNCTION__, err, strerror(err));
-			if(err == EAGAIN) // or other errno
-			{
-				return 0;
-			}
-			else
-			{
-				fprintf(stdout, "%s: send %ld, from fd=%d\n", __PRETTY_FUNCTION__, s_ret, m_SockFd);
-				return -1;
-			}
-		}
-		fprintf(stdout, "%s: send %ld, return %ld, %s\n", __PRETTY_FUNCTION__, s_len, s_ret, s_buffer);
 
-		//g_timer_thread->SetTimeout(this, 5000);
-		
+			MoveOnRequest();
+
+			ret = SendData();
+			if(ret != 0)
+			{
+				return ret;
+			}			
+		}	
+		else
+		{
+			break;
+		}
 	}
 	
 	return 0;
@@ -243,6 +264,39 @@ int TcpSession::DoRead()
 
 int TcpSession::DoEvents(u_int32_t events, TaskThread* threadp)
 {
-	// todo:
+	int ret = 0;
+
+	if(events & EPOLLERR)
+	{
+		delete this;
+		return 0;
+	}
+	if(events & EPOLLHUP)
+	{
+		delete this;
+		return 0;
+	}
+	if(events & EVENT_READ)
+	{
+		ret = DoRead();	
+		if(ret < 0)
+		{
+			delete this;
+			return 0;
+		}
+		else if(ret == 0)
+		{
+			// do nothing.
+		}
+		else
+		{
+			m_task_thread->m_EventsMaster.ModifyWatch(m_SockFd, EVENT_READ|EVENT_WRITE, this);
+		}
+	}
+	if(events & EVENT_WRITE)
+	{
+		// todo:
+	}
+	
 	return 0;
 }

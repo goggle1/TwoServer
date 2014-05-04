@@ -43,6 +43,7 @@ int TaskThread::Entry()
 	struct epoll_event events[MAX_EVENTS];    
     while(1) 
     {    	
+    	g_tcp_server->DoRead(this);
     	g_http_server->DoRead(this);
     	g_nfsp_server->DoRead(this);
     	
