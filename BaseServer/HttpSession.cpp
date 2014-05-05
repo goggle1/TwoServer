@@ -16,7 +16,7 @@
 #define BASE_SERVER_NAME		"OneServer"
 #define BASE_SERVER_VERSION		"0.1.0"
 #define MAX_TIME_LEN			64
-#define WORK_PATH				"/home/html"
+#define HTML_HOME				"/home/html"
 #define CHARSET_UTF8			"utf-8"
 
 #define CONTENT_TYPE_TEXT_PLAIN					"text/plain"
@@ -689,7 +689,7 @@ int HttpSession::DoGet()
 	fprintf(stdout, "%s[%p]: %s\n", __PRETTY_FUNCTION__, this, m_Request.fRequestPath);
 	
 	char abs_path[PATH_MAX];
-	snprintf(abs_path, PATH_MAX, "%s%s", WORK_PATH, m_Request.fRequestPath);
+	snprintf(abs_path, PATH_MAX, "%s%s", HTML_HOME, m_Request.fRequestPath);
 	abs_path[PATH_MAX-1] = '\0';		
 	if(file_exist(abs_path))
 	{

@@ -19,13 +19,16 @@ class TcpSession : public Task
 public:
 	TcpSession(int fd, struct sockaddr_in* addr);
 	virtual ~TcpSession();
-	int 			Init(TaskThread* threadp = NULL);
-	int				DoRead();	
+	int 			Init(TaskThread* threadp = NULL);	
+	void			Close();
 	virtual int		DoEvents(u_int32_t events, TaskThread* threadp);
+	
+protected:
+	int				DoRead();
 	int		    	RecvData();
 	int		    	SendData();	
 	bool			IsFullRequest();
-	int				ResponseRequest();
+	int				DoRequest();
 	void			MoveOnRequest();
 	
 protected:

@@ -28,11 +28,7 @@ TcpSession::~TcpSession()
 {	
 	fprintf(stdout, "%s[%p][%p]: fd=%d, 0x%08X:%u\n", __PRETTY_FUNCTION__, this, m_task_thread,
 		m_SockFd, m_SockAddr.sin_addr.s_addr, m_SockAddr.sin_port);
-	if(m_SockFd != -1)
-	{
-		close(m_SockFd);
-		m_SockFd = -1;
-	}
+	Close();
 }
 
 int TcpSession::Init(TaskThread* threadp)
@@ -64,6 +60,7 @@ int TcpSession::Init(TaskThread* threadp)
     	return -3;
     }
 
+#if 1
     struct linger              linger;
     linger.l_onoff = 1;
     linger.l_linger = 0;
@@ -72,6 +69,8 @@ int TcpSession::Init(TaskThread* threadp)
     {
     	return -4;
     }
+
+#endif
     
 	// InitNonBlocking
    	int flag = ::fcntl(m_SockFd, F_GETFL, 0);
@@ -89,6 +88,15 @@ int TcpSession::Init(TaskThread* threadp)
 	}
 	
 	return 0;
+}
+
+void TcpSession::Close()
+{
+	if(m_SockFd != -1)
+	{
+		close(m_SockFd);
+		m_SockFd = -1;
+	}
 }
 
 // -1, error
@@ -128,7 +136,7 @@ int TcpSession::RecvData()
 			}
 		}
 		fprintf(stdout, "%s[%p]: size=%ld, recv=%ld,\n", __PRETTY_FUNCTION__, this, recv_buff_size, recv_ret, recv_bufferp);
-		my_printf(stdout, recv_bufferp, recv_ret);
+		//my_printf(stdout, recv_bufferp, recv_ret);
 		m_StrReceived.Len += recv_ret;		
 	}
 
@@ -201,7 +209,7 @@ bool TcpSession::IsFullRequest()
 }
 
 
-int TcpSession::ResponseRequest()
+int TcpSession::DoRequest()
 {
 	int ret = 0;
 
@@ -238,7 +246,7 @@ int TcpSession::DoRead()
 	{
 		if(IsFullRequest())
 		{
-			ret = ResponseRequest();
+			ret = DoRequest();
 			if(ret < 0)
 			{
 				return ret;	
@@ -258,7 +266,7 @@ int TcpSession::DoRead()
 		}
 	}
 	
-	return 0;
+	return ret;
 }
 
 
