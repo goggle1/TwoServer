@@ -40,7 +40,7 @@ OSCond::OSCond()
 {
 	pthread_condattr_t cond_attr;
 	pthread_condattr_init(&cond_attr);
-	int ret = pthread_cond_init(&fCondition, &cond_attr);
+	pthread_cond_init(&fCondition, &cond_attr);
 }
 
 OSCond::~OSCond()

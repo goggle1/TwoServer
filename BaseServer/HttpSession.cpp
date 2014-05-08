@@ -793,7 +793,7 @@ int HttpSession::DoContinue()
 			return SEND_TO_BE_CONTINUE;
 		}
 		
-		ssize_t read_len = m_CFile->Read(buffer_availiable.Ptr, buffer_availiable.Len);
+		ssize_t read_len = m_CFile->Read((u_int8_t*)buffer_availiable.Ptr, buffer_availiable.Len);
 		if(read_len < 0)
 		{
 			fprintf(stderr, "%s[%p]: read ret=%ld, errno=%d, %s\n", 

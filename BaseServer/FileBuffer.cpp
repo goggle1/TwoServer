@@ -90,8 +90,8 @@ PIECE_T* FileBuffer::ReadPiece(int piece_index)
 	piecep->index 			= piece_index;
 	piecep->access_count 	= 0;
 	piecep->size 			= want_length;
-	piecep->data 			= malloc(piecep->size);
-	if(piecep->data == NULL)
+	piecep->datap 			= (u_int8_t*)malloc(piecep->size);
+	if(piecep->datap == NULL)
 	{
 		free(piecep);
 		piecep = NULL;
@@ -99,16 +99,16 @@ PIECE_T* FileBuffer::ReadPiece(int piece_index)
 	}
 	
 	lseek(m_fd, file_offset, SEEK_SET);
-	int64_t read_len = read(m_fd, piecep->data, want_length);
+	int64_t read_len = read(m_fd, piecep->datap, want_length);
 	piecep->len = read_len;
 
 	int ret = dequeh_append(&m_PiecesDeque, piecep);
 	if(ret < 0)
 	{
-		if(piecep->data != NULL)
+		if(piecep->datap != NULL)
 		{
-			free(piecep->data);
-			piecep->data = NULL;
+			free(piecep->datap);
+			piecep->datap = NULL;
 		}	
 		free(piecep);
 		piecep = NULL;
@@ -118,7 +118,7 @@ PIECE_T* FileBuffer::ReadPiece(int piece_index)
 	return piecep;	
 }
 
-int64_t FileBuffer::Read(int64_t file_offset, void* buffer, u_int64_t size)
+int64_t FileBuffer::Read(int64_t file_offset, u_int8_t* buffer, u_int64_t size)
 {
 	int64_t read_len = 0;
 	
@@ -157,7 +157,7 @@ int64_t FileBuffer::Read(int64_t file_offset, void* buffer, u_int64_t size)
 			piece_position_end	= file_position_end % PIECE_SIZE;
 		}
 		int64_t	piece_data_len = piece_position_end - piece_position_begin + 1;
-		memcpy(buffer+read_len, piecep->data+piece_position_begin, piece_data_len);
+		memcpy(buffer+read_len, piecep->datap+piece_position_begin, piece_data_len);
 		read_len += piece_data_len;		
 	}
 		
@@ -181,7 +181,7 @@ int64_t CFile::GetFileLength()
 	return file_len;
 }
 
-int64_t CFile::Read(void* buffer, u_int64_t size)
+int64_t CFile::Read(u_int8_t* buffer, u_int64_t size)
 {
 	int64_t read_len = m_FileBuffer->Read(m_FileOffset, buffer, size);
 	return read_len;

@@ -7,7 +7,7 @@
 int64_t OS::Milliseconds()
 {
 	struct timeval t;
-    int theErr = ::gettimeofday(&t, NULL);    
+    ::gettimeofday(&t, NULL);    
 
     int64_t curTime;
     curTime = t.tv_sec;

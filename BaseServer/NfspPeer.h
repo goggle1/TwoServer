@@ -2,8 +2,16 @@
 #define __NFSPPEER_H__
 
 #include "NfspProtocol.h"
+#include "NfspFile.h"
 #include "TaskThread.h"
 #include "TcpSession.h"
+
+typedef struct bitfield_t
+{
+	u_int32_t bits_num;
+	u_int32_t byte_num;
+	u_int8_t* datap;
+} BITFIELD_T;
 
 class NfspPeer : public TcpSession
 {
@@ -20,7 +28,20 @@ protected:
 	bool 			IsFullCommand();
 	int 			DoCommand();
 	int 			DoHandShake();
+	int 			DoBitField();	
+	int 			DoRequest();
+	int				DoPiece();
+	int				DoQueryMeta();
+	int				DoPushMeta();
+	int				DoInterested();
 	int 			MakeHandShake();
+	int 			MakeBitField();
+	int				MakePiece();
+	int				MakeMeta();
+	int				MakeUnChoke();
+	int				GetBitField();
+	int				GetPieceData();	
+	int				GetMetaData();
 
 protected:
 	enum 
@@ -38,6 +59,13 @@ protected:
 	char 					m_InfoHashShow[INFO_HASH_SHOW_LEN];
 	char					m_InfoHashFileName[INFO_HASH_FILE_NAME_LEN];
 	char					m_InfoHashFullPath[PATH_MAX];
+	DAT_FILE_HEADER_T		m_FileHeader;
+	BITFIELD_T				m_BitField;
+	NFSP_REQUEST_T			m_Request;
+	u_int8_t				m_PieceData[PIECE_LEN];
+	int						m_PieceLength;
+	u_int8_t 				m_MetaTaskId[INFO_HASH_LEN];
+	u_int8_t*				m_MetaDatap;			
 
 };
 

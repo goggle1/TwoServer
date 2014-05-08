@@ -102,9 +102,7 @@ void TcpSession::Close()
 // -1, error
 // 0,  ok
 int TcpSession::RecvData()
-{
-	int ret = 0;
-	
+{	
 	while(1)
 	{
 		char* 	recv_bufferp	= m_RequestBuffer + m_StrReceived.Len;
@@ -135,7 +133,7 @@ int TcpSession::RecvData()
 				return -1;
 			}
 		}
-		fprintf(stdout, "%s[%p]: size=%ld, recv=%ld,\n", __PRETTY_FUNCTION__, this, recv_buff_size, recv_ret, recv_bufferp);
+		fprintf(stdout, "%s[%p]: size=%ld, recv=%ld\n", __PRETTY_FUNCTION__, this, recv_buff_size, recv_ret);
 		//my_printf(stdout, recv_bufferp, recv_ret);
 		m_StrReceived.Len += recv_ret;		
 	}

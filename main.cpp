@@ -32,6 +32,7 @@ int start_server()
 	
 	u_int32_t ip = 0;
 	u_int16_t port = 9595;
+	fprintf(stdout, "%s: ip=0x%08X, port=%u\n", __FUNCTION__, ip, port);
 	g_tcp_server = new TcpServer();
 	ret = g_tcp_server->Init(ip, port);
 	if(ret < 0)
@@ -42,6 +43,7 @@ int start_server()
 
 	u_int32_t ip2 = 0;
 	u_int16_t port2 = 9696;
+	fprintf(stdout, "%s: ip=0x%08X, port=%u\n", __FUNCTION__, ip2, port2);
 	g_http_server = new HttpServer();
 	ret = g_http_server->Init(ip2, port2);
 	if(ret < 0)
@@ -50,7 +52,8 @@ int start_server()
 	}
 
 	u_int32_t ip3 = 0;
-	u_int16_t port3 = 9797;
+	u_int16_t port3 = 6601;
+	fprintf(stdout, "%s: ip=0x%08X, port=%u\n", __FUNCTION__, ip3, port3);
 	g_nfsp_server = new NfspServer();
 	ret = g_nfsp_server->Init(ip3, port3);
 	if(ret < 0)

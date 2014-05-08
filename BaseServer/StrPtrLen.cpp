@@ -69,7 +69,7 @@ bool StrPtrLen::Equal(const char* compare) const
     if ((NULL == compare) || (NULL == Ptr))
         return false;
         
-    if ((::strlen(compare) == Len) && (memcmp(compare, Ptr, Len) == 0))
+    if (((int)::strlen(compare) == Len) && (memcmp(compare, Ptr, Len) == 0))
         return true;
     else
         return false;

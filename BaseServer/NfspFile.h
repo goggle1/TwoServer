@@ -34,6 +34,6 @@ typedef struct dat_file_header_t
 
 #define NFSP_HOME					"/home/html"
 #define CONTROL_PART_LENGTH			(1024*4)
-#define FILE_HEADER_LENGTH			(1024*1024*4)
+#define FILE_HEADER_LENGTH			(1024*1024*1)
 
 #endif

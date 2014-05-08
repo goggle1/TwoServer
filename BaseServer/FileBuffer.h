@@ -10,20 +10,20 @@
 
 typedef struct piece_t
 {
-	int 	index;
-	int 	size;
-	int 	len;	
-	int		access_count;
-	void* 	data;	
+	int 		index;
+	int 		size;
+	int 		len;	
+	int			access_count;
+	u_int8_t*	datap;	
 } PIECE_T;
 
 inline void piece_release(void* elementp)
 {
 	PIECE_T* piecep = (PIECE_T*)elementp;
-	if(piecep->data != NULL)
+	if(piecep->datap != NULL)
 	{
-		free(piecep->data);
-		piecep->data = NULL;
+		free(piecep->datap);
+		piecep->datap = NULL;
 	}
 
 	free(piecep);	
@@ -37,7 +37,7 @@ public:
 	int			Open(char* file_name);
 	char*		GetFileName() { return m_FileName; };
 	int64_t		GetFileLength();
-	int64_t		Read(int64_t offset, void* buffer, u_int64_t size);
+	int64_t		Read(int64_t offset, u_int8_t* buffer, u_int64_t size);
 protected:
 	PIECE_T*	FindPiece(int piece_index);
 	PIECE_T*	ReadPiece(int piece_index);
@@ -62,7 +62,7 @@ public:
 	CFile(FileBuffer* FileBufferp);
 	virtual ~CFile();
 	int64_t		GetFileLength();
-	int64_t		Read(void* buffer, u_int64_t size);
+	int64_t		Read(u_int8_t* buffer, u_int64_t size);
 	
 protected:
 	FileBuffer*		m_FileBuffer;

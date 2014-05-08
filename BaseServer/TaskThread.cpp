@@ -26,14 +26,14 @@ int TaskThread::Init()
 {
 	int ret = 0;
 	
-	m_EventsMaster.Init();
+	ret = m_EventsMaster.Init();
 	/*
 	m_EventsMaster.AddWatch(g_tcp_server->GetFd(),  EVENT_READ, g_tcp_server);
 	fprintf(stdout, "%s[%p]: AddWatch fd=%d\n", __PRETTY_FUNCTION__, this, g_tcp_server->GetFd());
 	m_EventsMaster.AddWatch(g_http_server->GetFd(), EVENT_READ, g_http_server);
 	fprintf(stdout, "%s[%p]: AddWatch fd=%d\n", __PRETTY_FUNCTION__, this, g_http_server->GetFd());
 	*/
-	return 0;
+	return ret;
 }
 
 int TaskThread::Entry()

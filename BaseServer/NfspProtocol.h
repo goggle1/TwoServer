@@ -71,6 +71,13 @@ typedef struct nfsp_command_header_t
  	u_int16_t		session_id;
 } NFSP_COMMAND_HEADER_T;
 
+typedef struct nfsp_request_t
+{
+ 	u_int32_t		piece_index;
+ 	u_int32_t		piece_begin;
+ 	u_int32_t		request_length;
+} NFSP_REQUEST_T;
+
 #define NFSP_TYPE_HANDSHAKE			0x0601
 #define NFSP_TYPE_KEEPALIVE			0x0602
 #define NFSP_TYPE_CHOKE				0x0603
