@@ -883,3 +883,13 @@ int NfspPeer::DoEvents(u_int32_t events,TaskThread * threadp)
 	return ret;
 }
 
+/*
+funshion client test:
+[participation]
+just_media_server=1
+enable_add_ms_info=1
+saved_ms_ip=192.168.160.202
+saved_ms_tcp_port=6601
+saved_ms_udp_port=6601
+*/
+
