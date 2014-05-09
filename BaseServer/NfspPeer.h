@@ -5,6 +5,7 @@
 #include "NfspFile.h"
 #include "TaskThread.h"
 #include "TcpSession.h"
+#include "FilesMaster.h"
 
 typedef struct bitfield_t
 {
@@ -63,9 +64,11 @@ protected:
 	BITFIELD_T				m_BitField;
 	NFSP_REQUEST_T			m_Request;
 	u_int8_t				m_PieceData[PIECE_LEN];
+	int						m_PieceIndex;
 	int						m_PieceLength;
 	u_int8_t 				m_MetaTaskId[INFO_HASH_LEN];
-	u_int8_t*				m_MetaDatap;			
+	u_int8_t*				m_MetaDatap;	
+	FileBuffer*				m_FileBufferp;
 
 };
 

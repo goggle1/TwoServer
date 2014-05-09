@@ -49,8 +49,10 @@ int byte_hex(u_int8_t* bytes, int len, char* buffer, int buff_len)
 NfspPeer::NfspPeer(int fd,struct sockaddr_in * addr) :
 	TcpSession(fd, addr)
 {
-	m_CommandState = COMMAND_STATE_RECV_HEADER;
-	m_MetaDatap = NULL;
+	m_CommandState 	= COMMAND_STATE_RECV_HEADER;
+	m_MetaDatap 	= NULL;
+	m_PieceIndex 	= -1;
+	m_FileBufferp	= NULL;
 }
 
 NfspPeer::~NfspPeer()
@@ -59,6 +61,11 @@ NfspPeer::~NfspPeer()
 	{
 		free(m_MetaDatap);
 		m_MetaDatap = NULL;
+	}
+	if(m_FileBufferp != NULL)
+	{
+		delete m_FileBufferp;
+		m_FileBufferp = NULL;
 	}
 }
 
@@ -490,32 +497,27 @@ int NfspPeer::GetPieceData()
 {
 	int ret = 0;
 
-	m_PieceLength = 0;
-
-	int fd = ::open(m_InfoHashFullPath, O_RDONLY);
-	if(fd == -1)
+	if(m_PieceIndex == m_Request.piece_index)
 	{
-		return -1;
+		return 0;
+	}
+
+	if(m_FileBufferp == NULL)
+	{
+		m_FileBufferp = g_files_master->OpenFileBuffer(m_InfoHashFullPath);
+		if(m_FileBufferp == NULL)
+		{
+			return -1;
+		}
 	}
 	
+	m_PieceLength = 0;	
 	off_t piece_position = FILE_HEADER_LENGTH + m_Request.piece_index*PIECE_LEN;
-	off_t seek_ret = ::lseek(fd, piece_position, SEEK_SET);
-	if(seek_ret == -1)
+	m_PieceLength = m_FileBufferp->Read(piece_position, m_PieceData, PIECE_LEN);
+	if(m_PieceLength == 0)
 	{
-		::close(fd);
-		fd = -1;
 		return -1;
 	}
-	
-	ret = ::read(fd, m_PieceData, PIECE_LEN);
-	if(ret < 0)
-	{
-		close(fd);
-		fd = -1;
-		return -1;
-	}
-
-	m_PieceLength = ret;
 
 	return 0;
 }
@@ -524,36 +526,21 @@ int NfspPeer::GetMetaData()
 {
 	int ret = 0;
 
-	m_PieceLength = 0;
-
-	int fd = ::open(m_InfoHashFullPath, O_RDONLY);
-	if(fd == -1)
+	if(m_MetaDatap != NULL)
 	{
-		return -1;
-	}
-	
-	off_t meta_position = CONTROL_PART_LENGTH;
-	off_t seek_ret = ::lseek(fd, meta_position, SEEK_SET);
-	if(seek_ret == -1)
-	{
-		::close(fd);
-		fd = -1;
-		return -1;
+		return 0;
 	}
 
 	m_MetaDatap = (u_int8_t*)malloc(m_FileHeader.torrent_size);
 	if(m_MetaDatap == NULL)
-	{
-		::close(fd);
-		fd = -1;
+	{		
 		return -1;
 	}
 	
-	ret = ::read(fd, m_MetaDatap, m_FileHeader.torrent_size);
+	off_t meta_position = CONTROL_PART_LENGTH;	
+	ret = m_FileBufferp->Read(meta_position, m_MetaDatap, m_FileHeader.torrent_size);
 	if(ret != (int)m_FileHeader.torrent_size)
-	{
-		::close(fd);
-		fd = -1;
+	{		
 		free(m_MetaDatap);
 		m_MetaDatap = NULL;
 		return -1;
@@ -599,7 +586,8 @@ int NfspPeer::DoHandShake()
 	snprintf(m_InfoHashFullPath, PATH_MAX, "%s/%s", NFSP_HOME, m_InfoHashFileName);
 	m_InfoHashFullPath[PATH_MAX-1] = '\0';
 	
-	ret = ::access(m_InfoHashFullPath, R_OK);
+	//ret = ::access(m_InfoHashFullPath, R_OK);
+	ret = g_files_master->AccessFile(m_InfoHashFullPath);
 	if(ret < 0)
 	{
 		fprintf(stderr, "%s[%p]: m_InfoHashFileName [%s] can not accessed! ret=%d\n", __PRETTY_FUNCTION__, this, m_InfoHashFileName, ret);
@@ -663,7 +651,6 @@ int NfspPeer::DoRequest()
 
 	fprintf(stdout, "%s[%p]: InfoHash=%s, PieceIndex=%u, PieceBegin=%u, RequestLength=%u\n", __PRETTY_FUNCTION__, this,
 		m_InfoHashShow, m_Request.piece_index, m_Request.piece_begin, m_Request.request_length);
-
 
 	ret = GetPieceData();
 	if(ret < 0)

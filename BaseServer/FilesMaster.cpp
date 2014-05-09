@@ -17,7 +17,7 @@ FilesMaster::~FilesMaster()
 
 int FilesMaster::AccessFile(char* file_name)
 {
-	FileBuffer* FileBufferp = FindFile(file_name);
+	FileBuffer* FileBufferp = FindFileBuffer(file_name);
 	if(FileBufferp != NULL)
 	{
 		return 0;
@@ -28,10 +28,10 @@ int FilesMaster::AccessFile(char* file_name)
 	return ret;
 }
 
-CFile*	FilesMaster::OpenFile(char* file_name)
+FileBuffer* FilesMaster::OpenFileBuffer(char * file_name)
 {
-	FileBuffer* FileBufferp = FindFile(file_name);
-	fprintf(stdout, "%s: FindFile(%s) return %p\n", __PRETTY_FUNCTION__, file_name, FileBufferp);
+	FileBuffer* FileBufferp = FindFileBuffer(file_name);
+	fprintf(stdout, "%s: FindFileBuffer(%s) return %p\n", __PRETTY_FUNCTION__, file_name, FileBufferp);
 	if(FileBufferp == NULL)
 	{
 		FileBufferp = new FileBuffer();	
@@ -50,6 +50,19 @@ CFile*	FilesMaster::OpenFile(char* file_name)
 			FileBufferp = NULL;
 			return NULL;
 		}
+		return FileBufferp;
+	}	
+
+	return FileBufferp;
+}
+
+CFile*	FilesMaster::OpenFile(char* file_name)
+{
+	FileBuffer* FileBufferp = OpenFileBuffer(file_name);
+	fprintf(stdout, "%s: OpenFileBuffer(%s) return %p\n", __PRETTY_FUNCTION__, file_name, FileBufferp);
+	if(FileBufferp == NULL)
+	{
+		return NULL;
 	}	
 	
 	CFile* filep = new CFile(FileBufferp);
@@ -57,7 +70,7 @@ CFile*	FilesMaster::OpenFile(char* file_name)
 }
 
 
-FileBuffer*	FilesMaster::FindFile(char* file_name)
+FileBuffer*	FilesMaster::FindFileBuffer(char* file_name)
 {
 	DEQUEH_NODE* nodep = m_FilesDeque.headp;
 	while(nodep != NULL)

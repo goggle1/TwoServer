@@ -6,7 +6,6 @@
 #include "TcpSession.h"
 #include "FilesMaster.h"
 
-#define USE_FILE_BUFFER 1
 #define kReadBufferSize (1024*256)
 
 class HttpSession : public TcpSession
