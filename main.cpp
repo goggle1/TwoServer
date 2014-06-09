@@ -38,6 +38,7 @@ int start_server()
 	if(ret < 0)
 	{
 		fprintf(stderr, "%s: server init error, return %d\n", __FUNCTION__, ret);
+		return ret;
 	}
 	
 
@@ -49,6 +50,7 @@ int start_server()
 	if(ret < 0)
 	{
 		fprintf(stderr, "%s: server init error, return %d\n", __FUNCTION__, ret);
+		return ret;
 	}
 
 	u_int32_t ip3 = 0;
@@ -59,6 +61,7 @@ int start_server()
 	if(ret < 0)
 	{
 		fprintf(stderr, "%s: server init error, return %d\n", __FUNCTION__, ret);
+		return ret;
 	}
 	
 	return ret;
@@ -69,7 +72,7 @@ int start_thread_workers()
 	int ret = 0;
 	
 	g_task_thread_pool = new TaskThreadPool();
-	g_task_thread_pool->Init();
+	ret = g_task_thread_pool->Init();
 
 	return ret;
 }
@@ -82,8 +85,20 @@ int main(int argc, char* argv[])
 	
 	int ret = 0;
 	ret = start_files_master();
-	ret = start_server();
+	if(ret < 0)
+	{
+		return ret;
+	}
+	ret = start_server();	
+	if(ret < 0)
+	{
+		return ret;
+	}
 	ret = start_thread_workers();
+	if(ret < 0)
+	{
+		return ret;
+	}
 
 	while(1)
 	{

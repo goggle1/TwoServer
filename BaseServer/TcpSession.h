@@ -7,7 +7,7 @@
 #include "task.h"
 
 #define REQUEST_BUFF_SIZE	(1024*16)
-#define RESPONSE_BUFF_SIZE	(1024*256)
+#define RESPONSE_BUFF_SIZE	(1024*512)
 #define MAX_IPADDR_LEN		32
 
 #define SEND_ERROR				-1

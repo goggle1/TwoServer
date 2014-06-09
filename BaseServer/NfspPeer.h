@@ -69,6 +69,8 @@ protected:
 	u_int8_t 				m_MetaTaskId[INFO_HASH_LEN];
 	u_int8_t*				m_MetaDatap;	
 	FileBuffer*				m_FileBufferp;
+	int						m_TestFd;
+	
 
 };
 

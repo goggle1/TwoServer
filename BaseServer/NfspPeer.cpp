@@ -46,13 +46,16 @@ int byte_hex(u_int8_t* bytes, int len, char* buffer, int buff_len)
 	return 0;
 }
 
-NfspPeer::NfspPeer(int fd,struct sockaddr_in * addr) :
+NfspPeer::NfspPeer(int fd, struct sockaddr_in * addr) :
 	TcpSession(fd, addr)
 {
 	m_CommandState 	= COMMAND_STATE_RECV_HEADER;
 	m_MetaDatap 	= NULL;
 	m_PieceIndex 	= -1;
 	m_FileBufferp	= NULL;
+	memset(m_InfoHash, 0, sizeof(m_InfoHash));
+	memset(m_InfoHashShow, 0, sizeof(m_InfoHashShow));
+	memset(m_InfoHashFileName, 0, sizeof(m_InfoHashFileName));
 }
 
 NfspPeer::~NfspPeer()
@@ -62,10 +65,10 @@ NfspPeer::~NfspPeer()
 		free(m_MetaDatap);
 		m_MetaDatap = NULL;
 	}
-	if(m_FileBufferp != NULL)
+	if(m_TestFd != -1)
 	{
-		delete m_FileBufferp;
-		m_FileBufferp = NULL;
+		close(m_TestFd);
+		m_TestFd = -1;
 	}
 }
 
@@ -262,14 +265,14 @@ int NfspPeer::MakePiece()
 		m_InfoHashShow, m_Request.piece_index, m_PieceLength, m_Request.piece_begin, m_Request.request_length);
 
 	int slice_length = m_Request.request_length;
-	if(m_Request.piece_begin >= m_PieceLength)
+	if((int)m_Request.piece_begin >= m_PieceLength)
 	{
 		fprintf(stderr, "%s[%p]: m_Request.piece_begin[%u] >= m_PieceLength[%d]\n", 
 			__PRETTY_FUNCTION__, this,
 			m_Request.piece_begin, m_PieceLength);
 		return -1;
 	}
-	else if(m_Request.piece_begin + m_Request.request_length > m_PieceLength)
+	else if((int)m_Request.piece_begin + (int)m_Request.request_length > m_PieceLength)
 	{
 		slice_length = m_PieceLength - m_Request.piece_begin;
 		fprintf(stderr, "%s[%p]: m_Request.piece_begin[%u] + m_Request.request_length[%u] > m_PieceLength[%d], so slice_length=%d\n", 
@@ -321,6 +324,8 @@ int NfspPeer::MakePiece()
 
 	memcpy(packetp->data+offset, m_PieceData+m_Request.piece_begin, slice_length);
 	offset += slice_length;
+
+	write(m_TestFd, m_PieceData+m_Request.piece_begin, slice_length);
 
 	m_StrRemained.Len += m_SendCommand.length;	
 
@@ -484,11 +489,16 @@ int NfspPeer::GetBitField()
 	ret = ::read(fd, m_BitField.datap, m_FileHeader.bitfield_size);
 	if(ret < (int)m_FileHeader.bitfield_size)
 	{
+		::close(fd);
+		fd = -1;
 		return -1;
 	}
 	
 	m_BitField.byte_num = m_FileHeader.bitfield_size;
 	m_BitField.bits_num = m_BitField.byte_num*8; //todo:
+
+	::close(fd);
+	fd = -1;
 
 	return 0;
 }
@@ -497,7 +507,7 @@ int NfspPeer::GetPieceData()
 {
 	int ret = 0;
 
-	if(m_PieceIndex == m_Request.piece_index)
+	if(m_PieceIndex == (int)m_Request.piece_index)
 	{
 		return 0;
 	}
@@ -559,7 +569,7 @@ int NfspPeer::DoHandShake()
 	memcpy(m_InfoHash, m_RecvPacketp->data, sizeof(m_InfoHash));
 	memcpy(m_PeerId,   m_RecvPacketp->data+sizeof(m_InfoHash), sizeof(m_PeerId));
 	// check version.
-	#if 1
+#if 0
 	if(m_SendCommand.version <= 0x0002)
 	{
 		// do nothing.
@@ -568,8 +578,9 @@ int NfspPeer::DoHandShake()
 	{
 		m_SendCommand.version = 0x0002;
 	}
-	#endif
-	//m_SendCommand.version = 0x0001;
+#else
+	m_SendCommand.version = 0x0001;
+#endif	
 	// check length.
 	if(m_SendCommand.length > 0x00000036)
 	{
@@ -585,6 +596,12 @@ int NfspPeer::DoHandShake()
 
 	snprintf(m_InfoHashFullPath, PATH_MAX, "%s/%s", NFSP_HOME, m_InfoHashFileName);
 	m_InfoHashFullPath[PATH_MAX-1] = '\0';
+
+	char temp_file_name[PATH_MAX];
+	snprintf(temp_file_name, PATH_MAX, "./%s.download", m_InfoHashFileName);
+	temp_file_name[PATH_MAX] = '\0';
+	m_TestFd = ::open(temp_file_name, O_CREAT|O_WRONLY, 0666);
+	fprintf(stdout, "%s[%p]: m_TestFd=%d", __PRETTY_FUNCTION__, this, m_TestFd);
 	
 	//ret = ::access(m_InfoHashFullPath, R_OK);
 	ret = g_files_master->AccessFile(m_InfoHashFullPath);

@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+#include "NfspFile.h"
 #include "FileBuffer.h"
 
 FileBuffer::FileBuffer()
@@ -123,7 +124,7 @@ int64_t FileBuffer::Read(int64_t file_offset, u_int8_t* buffer, u_int64_t size)
 	int64_t read_len = 0;
 	
 	int64_t file_position_begin = file_offset;
-	int64_t	file_position_end 	= file_position_begin + size;
+	int64_t	file_position_end 	= file_position_begin + size - 1;
 	if(file_position_end >= m_FileLength)
 	{
 		file_position_end = m_FileLength - 1;
